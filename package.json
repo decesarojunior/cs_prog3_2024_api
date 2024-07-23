@@ -1,0 +1,32 @@
+{
+  "name": "cs_prog3_2024_api",
+  "version": "1.0.0",
+  "description": "projeto para a disciplina de programacao III",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/decesarojunior/cs_prog3_2024_api.git"
+  },
+  "keywords": [
+    "node",
+    "javascript",
+    "express",
+    "html",
+    "vue",
+    "postgres",
+    "pg"
+  ],
+  "author": "telmo junior",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/decesarojunior/cs_prog3_2024_api/issues"
+  },
+  "homepage": "https://github.com/decesarojunior/cs_prog3_2024_api#readme",
+  "dependencies": {
+    "express": "^4.17.3",
+    "pg": "^8.7.3"
+  }
+}
