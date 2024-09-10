@@ -91,16 +91,15 @@ sw.get('/listpatentes', function (req, res, next) {
     });
 });
 
-
 sw.get('/listjogadores', function (req, res, next) {    
     postgres.connect(function(err,client,done) {
        if(err){
            console.log("Nao conseguiu acessar o  BD "+ err);
            res.status(400).send('{'+err+'}');
        }else{            
-            var q ='select j.nickname, j.senha, 0 as patentes, e.cep '+
-                        'from tb_jogador j, tb_endereco e '+
-                        'where e.nicknamejogador=j.nickname order by nickname asc;';    
+            var q ='select j.nickname, j.senha, j.quantpontos, 0 as patentes, 0 as endereco '+
+                        'from tb_jogador j '+
+                        'order by nickname asc;';    
             //Exercicio 1: incluir todas as colunas de tb_endereco
             client.query(q,async function(err,result) {
                 
@@ -115,19 +114,81 @@ sw.get('/listjogadores', function (req, res, next) {
                                                       'tb_jogador_conquista_patente '+
                                                       'where nickname = $1', 
                                                              [result.rows[i].nickname])                                                    
-                              result.rows[i].patentes = pj.rows;    
+                              result.rows[i].patentes = pj.rows;
+
+                              pe = await client.query('select codigo, complemento, cep from '+
+                                'tb_endereco '+
+                                'where nicknamejogador = $1', 
+                                       [result.rows[i].nickname])
+                              
+                              result.rows[i].endereco = pe.rows[0];
                         } catch (err) {                                                       
                             res.status(400).send('{'+err+'}');
                         }                                           
                     }
                     done(); // closing the connection;
-                    //console.log('retornou 201 no /listendereco');
+                    //console.log('retornou 201 no /listendereco');                    
                     res.status(201).send(result.rows);
                 }           
             });
        }       
     });
 });
+
+//Exercicio 1: codificar um serviço para cadastrar jogador com endereço e associar patente(s)
+
+sw.post('/insertjogador', function(req, res, next){
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Nao conseguiu acessar o  BD "+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+            //insert tb_jogador
+            var q1 = {
+                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, situacao) values ($1, $2, $3, $4, $5)',
+                values : [req.body.nickname, req.body.senha, req.body.quantpontos, req.body.quantdinheiro, req.body.situacao]
+            }            
+            // insert em tb_endereco
+            client.query(q1, function(err,result1) {
+                if(err){
+                    console.log('retornou 400 no insert q1 em tb_jogador');
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    var q2 = {
+                        text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3)',
+                        values : [req.body.endereco.complemento, req.body.endereco.cep, req.body.endereco.nicknamejogador]
+                    } 
+
+                    client.query(q2, async function(err, result2){
+
+                        if(err){
+                            console.log('retornou 400 no insert q1 em tb_jogador');
+                            res.status(400).send('{'+err+'}');
+                        }else{
+
+                            for(var i=0; i < req.body.patentes.length; i++){                                              
+                                try { //Exercicio 2: incluir todas as colunas de tb_patente.                         
+                                      pj = await client.query('insert into tb_jogador_conquista_patente (nickname, codpatente) values ($1, $2)',
+                                        [req.body.nickname, req.body.patentes[i].codpatente]
+                                      )
+                                }catch (error){
+                                    console.log('retornou 400 no insert for em tb_jogador');
+                                    res.status(400).send('{'+err+'}');
+                                }
+                            }
+
+                        }
+                    })
+                
+                }
+            })
+        }
+        done(); // closing the connection;
+    });
+});
+
+//Exercicio 2: codificar um serviço para alterar jogador
 
 sw.post('/insertpatente', function(req, res, next){
 
