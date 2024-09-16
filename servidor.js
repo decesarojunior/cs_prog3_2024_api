@@ -157,13 +157,13 @@ sw.post('/insertjogador', function(req, res, next){
                 }else{
                     var q2 = {
                         text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3)',
-                        values : [req.body.endereco.complemento, req.body.endereco.cep, req.body.endereco.nicknamejogador]
+                        values : [req.body.endereco.complemento, req.body.endereco.cep, req.body.nickname]
                     } 
 
                     client.query(q2, async function(err, result2){
 
                         if(err){
-                            console.log('retornou 400 no insert q1 em tb_jogador');
+                            console.log('retornou 400 no insert q2 em tb_endereco');
                             res.status(400).send('{'+err+'}');
                         }else{
 
@@ -173,7 +173,7 @@ sw.post('/insertjogador', function(req, res, next){
                                         [req.body.nickname, req.body.patentes[i].codpatente]
                                       )
                                 }catch (error){
-                                    console.log('retornou 400 no insert for em tb_jogador');
+                                    console.log('retornou 400 no insert for em tb_jogador_conquista_patente');
                                     res.status(400).send('{'+err+'}');
                                 }
                             }
