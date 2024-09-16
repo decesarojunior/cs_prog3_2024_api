@@ -146,7 +146,7 @@ sw.post('/insertjogador', function(req, res, next){
         }else{
             //insert tb_jogador
             var q1 = {
-                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, situacao) values ($1, $2, $3, $4, $5)',
+                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, situacao) values ($1, $2, $3, $4, $5) returning nickname, 0 as patentes',
                 values : [req.body.nickname, req.body.senha, req.body.quantpontos, req.body.quantdinheiro, req.body.situacao]
             }            
             // insert em tb_endereco
@@ -172,11 +172,15 @@ sw.post('/insertjogador', function(req, res, next){
                                       pj = await client.query('insert into tb_jogador_conquista_patente (nickname, codpatente) values ($1, $2)',
                                         [req.body.nickname, req.body.patentes[i].codpatente]
                                       )
+
                                 }catch (error){
                                     console.log('retornou 400 no insert for em tb_jogador_conquista_patente');
-                                    res.status(400).send('{'+err+'}');
+                                    console.log(error)
+                                    res.status(400).send('{'+error+'}');
                                 }
                             }
+                            done(); // closing the connection;
+                            res.status(200).send({"nickname" : result1.rows[0].nickname, "patentes" : req.body.patentes})
 
                         }
                     })
@@ -184,7 +188,7 @@ sw.post('/insertjogador', function(req, res, next){
                 }
             })
         }
-        done(); // closing the connection;
+       
     });
 });
 
