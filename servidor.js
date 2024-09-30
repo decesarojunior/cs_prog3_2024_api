@@ -144,9 +144,9 @@ sw.post('/insertjogador', function(req, res, next){
             console.log("Nao conseguiu acessar o  BD "+ err);
             res.status(400).send('{'+err+'}');
         }else{
-            //insert tb_jogador
+            //insert tb_jogador - questão 1 - segunda prova prática - primeira etapa.
             var q1 = {
-                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, situacao) values ($1, $2, $3, $4, $5) returning nickname, 0 as patentes',
+                text: 'insert into tb_jogador (nickname, senha, quantpontos, quantdinheiro, situacao) values ($1, $2, $3, $4, $5) returning nickname, quantpontos, quantdinheiro, to_char(datacadastro, \'dd/mm/yyyy\') as datacadastro, situacao, 0 as endereco, 0 as patentes',
                 values : [req.body.nickname, req.body.senha, req.body.quantpontos, req.body.quantdinheiro, req.body.situacao]
             }            
             // insert em tb_endereco
@@ -156,7 +156,7 @@ sw.post('/insertjogador', function(req, res, next){
                     res.status(400).send('{'+err+'}');
                 }else{
                     var q2 = {
-                        text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3)',
+                        text: 'insert into tb_endereco (complemento, cep, nicknamejogador) values ($1, $2, $3) returning cep, complemento',
                         values : [req.body.endereco.complemento, req.body.endereco.cep, req.body.nickname]
                     } 
 
@@ -179,8 +179,15 @@ sw.post('/insertjogador', function(req, res, next){
                                     res.status(400).send('{'+error+'}');
                                 }
                             }
-                            done(); // closing the connection;
-                            res.status(200).send({"nickname" : result1.rows[0].nickname, "patentes" : req.body.patentes})
+                            done(); // closing the connection; 
+                            // questão 1 - segunda prova prática - primeira etapa.
+                            res.status(200).send({"nickname" : result1.rows[0].nickname,
+                                                  "quantpontos" : result1.rows[0].quantpontos,
+                                                  "quantdinheiro" : result1.rows[0].quantdinheiro,
+                                                  "datacadastro" : result1.rows[0].datacadastro,
+                                                  "situacao" : result1.rows[0].situacao,
+                                                  "endereco" : {"cep" : result2.rows[0].cep, "complemento" : result2.rows[0].complemento}, 
+                                                  "patentes" : req.body.patentes})
 
                         }
                     })
@@ -286,6 +293,63 @@ sw.get('/deletepatente/:codigo', function (req, res) {
                 
             });
        } 
+    });
+});
+
+/*
+    Questão 2 - segunda avalicação. Primeira Etapa
+    
+    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ('Modo Telmo Júnior', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
+    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ('Modo decesarojunior terrorista', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
+
+    insert into tb_mapa (codmodo, nome, datacadastromapa, status) values (1, 'modo mapa Telmo', to_date('25/09/1983', 'dd/mm/yyyy'), 'A');
+
+    insert into tb_local values (nome, statuslocal) values ('teste', true);
+
+    insert into tb_mapa_locais (codmapa, codlocal) values (3,3);
+*/
+
+sw.get('/listmapas', function (req, res, next) { 
+
+    postgres.connect(function(err,client,done) {
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+            var q ='select m.codigo, m.nome, to_char(m.datacadastromapa, \'dd/mm/yyyy\') as datacadastromapa, m.status, m.codmodo as modo, 0 as locais from tb_mapa m order by m.codigo asc';    
+            
+            client.query(q,async function(err,result) {
+                
+                if(err){
+                    console.log('retornou 400 no listjogadores');
+                    console.log(err);                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    for(var i=0; i < result.rows.length; i++){                                              
+                        try { //Exercicio 2: incluir todas as colunas de tb_patente.                         
+                              lc = await client.query('select codlocal as codigo from '+
+                                                      'tb_mapa_locais '+
+                                                      'where codmapa = $1', 
+                                                             [result.rows[i].codigo])                                                    
+                              result.rows[i].locais = lc.rows;
+
+                              pe = await client.query('select codigo, nome from '+
+                                'tb_modo '+
+                                'where codigo = $1', 
+                                       [result.rows[i].modo])
+                              
+                              result.rows[i].modo = pe.rows[0];
+
+                        } catch (err) {                                                       
+                            res.status(400).send('{'+err+'}');
+                        }                                           
+                    }
+                    done(); // closing the connection;
+                    //console.log('retornou 201 no /listendereco');                    
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
     });
 });
 
