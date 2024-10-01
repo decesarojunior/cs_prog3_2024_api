@@ -199,6 +199,12 @@ sw.post('/insertjogador', function(req, res, next){
     });
 });
 
+
+
+
+
+
+
 //Exercicio 2: codificar um serviço para alterar jogador
 
 sw.post('/insertpatente', function(req, res, next){
@@ -299,10 +305,13 @@ sw.get('/deletepatente/:codigo', function (req, res) {
 /*
     Questão 2 - segunda avalicação. Primeira Etapa
     
-    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ('Modo Telmo Júnior', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
-    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) values ('Modo decesarojunior terrorista', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
+    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) 
+    values ('Modo Telmo Júnior', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
+    insert into tb_modo (nome, datacriacao, quantboots, quantrounds) 
+    values ('Modo decesarojunior terrorista', to_date('25/09/1983', 'dd/mm/yyyy'), 0,0);
 
-    insert into tb_mapa (codmodo, nome, datacadastromapa, status) values (1, 'modo mapa Telmo', to_date('25/09/1983', 'dd/mm/yyyy'), 'A');
+    insert into tb_mapa (codmodo, nome, datacadastromapa, status) values (1, 'modo mapa Telmo', 
+    to_date('25/09/1983', 'dd/mm/yyyy'), 'A');
 
     insert into tb_local values (nome, statuslocal) values ('teste', true);
 
@@ -333,9 +342,9 @@ sw.get('/listmapas', function (req, res, next) {
                                                              [result.rows[i].codigo])                                                    
                               result.rows[i].locais = lc.rows;
 
-                              pe = await client.query('select codigo, nome from '+
-                                'tb_modo '+
-                                'where codigo = $1', 
+                              pe = await client.query('select md.codigo, md.nome from tb_mapa m, '+
+                                'tb_modo md '+
+                                'where  m.codmodo=md.codigo and md.codigo = $1', 
                                        [result.rows[i].modo])
                               
                               result.rows[i].modo = pe.rows[0];
