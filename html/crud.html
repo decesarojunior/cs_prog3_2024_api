@@ -18,9 +18,9 @@
                <ul class="nav nav-pills nav-stacked">
                  <li class="active"><a data-toggle="pill" href="#home">Autenticação</a></li>
                  <li><a data-toggle="pill" href="#menu1">Patentes</a></li>
-                 <li><a data-toggle="pill" href="#menu2">Sair</a></li>
                  <li><a data-toggle="pill" href="#menu3">Locais</a></li>
                  <li><a data-toggle="pill" href="#menu4">Mapas</a></li>
+                 <li><a data-toggle="pill" href="#menu2">Sair</a></li>
                </ul>
              </div>
              <div class="col-xs-6">
@@ -49,16 +49,55 @@
                                     <tr v-for="(p, indice) in patentes">                                                
                                             <td>{{p.codigo}}</td>
                                             <td>{{p.nome}}</td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td>{{p.quant_min_pontos}}</td>
+                                            <td>{{p.datacriacao}}</td>
+                                            <td>{{p.cor}}</td>
+                                            <td>{{p.logotipo}}</td>
                                             <td><button v-on:click="editPatente(indice, p.codigo)" class="btn" type="button">Alterar</button></td>
                                             <td><button v-on:click="remPatente(indice, p.codigo)" class="btn" type="button">Remover</button></td>
                                     </tr>
                                 </tbody>
                             </table>
+                            <!--https://github.com/decesarojunior/js_node_express_vue_cs  -->
+                            <div id="formulario">                        
+                                <h3>Formulário para cadastrar e alterar Patente</h3>
+                                    <div class="form-group">
+                                        <label for="namePatenteCodigo">Codigo:</label>
+                                        <input type="number" v-model="form_patente.codigo" class="form-control" 
+                                                    name="namePatenteCodigo" id="idPatenteCodigo" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                      <label for="namePatenteNome">Nome:</label>
+                                      <input type="text" v-model="form_patente.nome" class="form-control" 
+                                                   name="namePatenteNome" id="idPatenteNome">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="namePatenteMinPontos">Quantidade Min. Pontos:</label>
+                                        <input type="number" v-model="form_patente.quant_min_pontos" class="form-control" 
+                                                     name="namePatenteMinPontos" id="idPatenteMinPontos">
+                                    </div>
 
+                                    <div class="form-group">
+                                        <label for="namePatenteDataCriacao">Data de Criação:</label>
+                                        <input type="text" v-model="form_patente.datacriacao" class="form-control" 
+                                                     name="namePatenteDataCriacao" id="idPatenteDataCriacao" disabled>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="namePatenteCor">Cor:</label>
+                                        <input type="text" v-model="form_patente.cor" class="form-control" 
+                                                     name="namePatenteCor" id="idPatenteCor">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="namePatenteLogoTipo">Logo:</label>
+                                        <input type="text" v-model="form_patente.logotipo" class="form-control" 
+                                                     name="namePatenteLogoTipo" id="idPatenteLogoTipo">
+                                    </div>
+
+                                    <button @click="addPatente" class="btn btn-primary" type="button">Salvar</button>
+                                    <button @click="cleanFormularioPatente" class="btn btn-primary" type="button">Limpar</button>
+                            </div>
 
                         </div> 
 
@@ -84,14 +123,100 @@
            
             var patentes = [];
 
-            var dados = {"patentes": patentes}
+            var dados = {"patentes": patentes,
+                         "form_patente" : {
+                                           indice: '',
+                                           codigo: '',
+                                           nome:   '',
+                                           quant_min_pontos : '',
+                                           datacriacao : '',
+                                           cor : '',
+                                           logotipo: ''
+                                        }
+             }
 
             Vue.prototype.$http = axios;
 
             new Vue({ 
                 el: '#app', 
                 data: dados,
-                methods: { },
+                methods: { 
+
+                    addPatente: function(){
+
+                        var patente = jQuery.extend({}, this.form_patente);//clona o this.form_patente
+                        if(patente.nome.length > 0 && patente.quant_min_pontos > 0){
+                            //verificar se é para inncluir novo ou alterar registro.
+                            if(isNaN(parseInt(patente.indice))){
+                                //se retornar um NaN significa que o patente.indice é nullo - incluir
+                                this.$http.post('http://localhost:4000/insertpatente', patente)
+								.then(response => { 	
+										
+										this.patentes.push(response.data);										
+                                        alert('Inseriu a Patente '+response.data.codigo);
+                                        this.cleanFormularioPatente();
+									})
+								.catch(error => {                                     
+									alert('Erro ao inserir Patente: '+error.response.data);
+								});
+
+                            }else{
+                                //se não for Nan significa que é necessário alterar o registro
+                                this.$http.post('http://localhost:4000/updatepatente', patente)
+								.then(response => { 											
+										//altera o elemento.
+                                        Vue.set(this.patentes, patente.indice, response.data);										
+                                        alert('Alterou a Patente '+response.data.codigo);
+                                        this.cleanFormularioPatente();
+									})
+								.catch(error => {                                     
+									alert('Erro ao alterar Patente: '+error.response.data);
+								});
+                            }
+                        }else{
+                            alert("Formulário de Patente incompleto !!");
+                        }
+                    },
+                    cleanFormularioPatente: function(){
+                        this.form_patente.indice = '';
+                        this.form_patente.codigo = '';
+                        this.form_patente.nome = '';
+                        this.form_patente.quant_min_pontos = '';
+                        this.form_patente.cor = '';
+                        this.form_patente.datacriacao = '';
+                        this.form_patente.logotipo = '';
+                    },
+                    editPatente: function(param_index, param_codigo){
+                        this.form_patente.indice = param_index;
+                        this.form_patente.codigo = this.patentes[param_index].codigo;
+                        this.form_patente.nome = this.patentes[param_index].nome; 
+                        this.form_patente.quant_min_pontos = this.patentes[param_index].quant_min_pontos;
+                        this.form_patente.cor = this.patentes[param_index].cor;
+                        this.form_patente.datacriacao = this.patentes[param_index].datacriacao;
+                        this.form_patente.logotipo = this.patentes[param_index].logotipo;
+                    },
+                    remPatente: function(param_index, param_codigo){
+                        var r = confirm("Deseja realmente remover a patente "+param_codigo+" ?");
+                        if(r){
+                            this.$http.get('http://localhost:4000/deletepatente/' + param_codigo)
+                            .then(response => {
+                                //documentacao sobre o splice
+                                //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                                //remove 1 elemento do índice definido pela variavel param_index
+                                this.patentes.splice(param_index, 1);
+
+                                alert('Removeu com sucesso a Patente ' + response.data.codigo);
+
+                                })
+                            .catch(error => {
+                                    // error callback                                        
+                                    alert('Erro ao remover Patente: ' + error);
+                                    console.log(error);
+                            });	
+                        }
+                    }
+
+                },
                 created: function(){
 
                     this.$http.get('http://localhost:4000/listpatentes')                                        
@@ -99,9 +224,7 @@
                             //541
                             for(let p of response.data){
 
-                                this.patentes.push({"codigo" : p.codigo,
-                                    "nome" : p.nome
-                                });
+                                this.patentes.push(p);
 
                             }
                         }).catch(response => {

@@ -199,12 +199,6 @@ sw.post('/insertjogador', function(req, res, next){
     });
 });
 
-
-
-
-
-
-
 //Exercicio 2: codificar um serviço para alterar jogador
 
 sw.post('/insertpatente', function(req, res, next){
