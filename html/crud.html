@@ -111,7 +111,81 @@
                         </div>
                         <div id="menu4" class="tab-pane">
                             <h3>Mapas</h3>
-                            <h3>atividade sábado letivo:  implementar serviços web para CRUD de Mapa</h3>
+                            
+                            <table class="table table-striped" >
+                                <tr>
+                                    <th scope="col">Código</th>
+                                    <th scope="col">Nome</th>
+                                    <th scope="col">Modo</th>
+                                    <th scope="col">Data de Criacao</th>
+                                    <th scope="col">Status</th>                                   
+                                    <th scope="col">Alterar</th>
+                                    <th scope="col">Remover</th>
+                                </tr>
+                                <tbody>
+                                    <tr v-for="(m, indice) in mapas">                                                
+                                            <td>{{m.codigo}}</td>
+                                            <td>{{m.nome}}</td>
+                                            <td>{{m.modo.nome}}</td>
+                                            <td>{{m.datacadastromapa}}</td>
+                                            <td>{{m.status}}</td>
+                                            <td><button v-on:click="editMapa(indice, m.codigo)" class="btn" type="button">Alterar</button></td>
+                                            <td><button v-on:click="remMapa(indice, m.codigo)" class="btn" type="button">Remover</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div id="formulario">                        
+                                <h3>Formulário para cadastrar e alterar Mapas</h3>
+                                    <div class="form-group">
+                                        <label for="nameMapaCodigo">Codigo:</label>
+                                        <input type="number" v-model="form_mapa.codigo" class="form-control" 
+                                                    name="nameMapaCodigo" id="idMapaCodigo" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                      <label for="nameMapaNome">Nome:</label>
+                                      <input type="text" v-model="form_mapa.nome" class="form-control" 
+                                                   name="nameMapaNome" id="idMapaNome">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="namePatenteMinPontos">Status:</label>
+                                        <input type="checkbox" v-model="form_mapa.status"
+                                                     name="nameMapaStatus" id="idMapaStatus">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="nameMapaDataCriacao">Data de Criação:</label>
+                                        <input type="text" v-model="form_mapa.datacadastroMapa" class="form-control" 
+                                                     name="nameMapaDataCriacao" id="idMapaDataCriacao" disabled>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="nameMapaModo">Modo:</label>
+                                        <select v-model="form_mapa.modo" class="form-control" id="selectMapaModo">
+                                            <option value="Selecione" selected disabled>Escolha um item</option>
+                                            <option v-for="md in modos" v-bind:value="{codigo: md.codigo}">
+                                                {{ md.nome}}
+                                            </option>                            
+                                        </select>                                        
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="nameMapaLocais">Locais:</label>
+                                        <select v-model="form_mapa.locais" class="form-control" id="selectMapaLocais" multiple size="5">                                         
+                                            <option v-for="lc in locais" v-bind:value="{codigo: lc.codigo}">
+                                                {{ lc.nome}}
+                                            </option>                            
+                                        </select>
+                                        
+                                    </div>
+
+                                    <button @click="addMapa" class="btn btn-primary" type="button">Salvar</button>
+                                    <button @click="cleanFormularioMapa" class="btn btn-primary" type="button">Limpar</button>
+                            </div>
+
+
+
+
                         </div>
                 </div>
              </div>
@@ -123,7 +197,16 @@
            
             var patentes = [];
 
-            var dados = {"patentes": patentes,
+            var mapas = [];
+
+            var modos = [];
+
+            var locais = [];
+
+            var dados = {"locais": locais,
+                         "modos" : modos,
+                         "mapas" : mapas,
+                         "patentes": patentes,
                          "form_patente" : {
                                            indice: '',
                                            codigo: '',
@@ -132,7 +215,16 @@
                                            datacriacao : '',
                                            cor : '',
                                            logotipo: ''
-                                        }
+                                        },
+                        "form_mapa" : {
+                                        indice: '',
+                                        codigo: '',
+                                        nome: '',
+                                        modo: {},
+                                        datacadastromapa: '',
+                                        status: '',
+                                        locais: []
+                                    }
              }
 
             Vue.prototype.$http = axios;
@@ -141,6 +233,9 @@
                 el: '#app', 
                 data: dados,
                 methods: { 
+                    addMapa: function(){
+
+                    },
 
                     addPatente: function(){
 
@@ -176,6 +271,15 @@
                         }else{
                             alert("Formulário de Patente incompleto !!");
                         }
+                    },
+                    cleanFormularioMapa: function(){
+
+                        this.form_mapa.indice = '';
+                        this.form_mapa.nome = '';
+                        this.form_mapa.status = false;
+                        this.form_mapa.datacadastromapa = '';
+                        this.form_mapa.modo = 'Selecione';
+
                     },
                     cleanFormularioPatente: function(){
                         this.form_patente.indice = '';
@@ -219,6 +323,8 @@
                 },
                 created: function(){
 
+                    this.cleanFormularioMapa();
+
                     this.$http.get('http://localhost:4000/listpatentes')                                        
                         .then(response => {
                             //541
@@ -233,7 +339,51 @@
                             console.log(response);
                         });
                 
+
+                        this.$http.get('http://localhost:4000/listmapas')                                        
+                        .then(response => {
+                            //541
+                            for(let p of response.data){
+
+                                this.mapas.push(p);
+
+                            }
+                        }).catch(response => {
+                            // error callback
+                            alert('Não conectou no serviço: listmapas :' + response);
+                            console.log(response);
+                        });
+
+
+                        this.$http.get('http://localhost:4000/listmodos')                                        
+                        .then(response => {
+                            //541
+                            for(let p of response.data){
+
+                                this.modos.push(p);
+
+                            }
+                        }).catch(response => {
+                            // error callback
+                            alert('Não conectou no serviço: listmodos :' + response);
+                            console.log(response);
+                        });
+
+                        this.$http.get('http://localhost:4000/listlocais')                                        
+                        .then(response => {
+                            //541
+                            for(let p of response.data){
+
+                                this.locais.push(p);
+
+                            }
+                        }).catch(response => {
+                            // error callback
+                            alert('Não conectou no serviço: listlocais :' + response);
+                            console.log(response);
+                        });
                 
+                        
                 }
             });
         

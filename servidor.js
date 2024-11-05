@@ -356,6 +356,62 @@ sw.get('/listmapas', function (req, res, next) {
     });
 });
 
+sw.get('/listmodos', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q ='select codigo, nome, datacriacao, quantboots, quantrounds  from tb_modo order by codigo asc;';            
+    
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log('retornou 400 no listmodos');
+                    console.log(err);
+                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+
+                    //console.log('retornou 201 no /listendereco');
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
+    });
+});
+
+sw.get('/listlocais', function (req, res, next) {
+    
+    postgres.connect(function(err,client,done) {
+
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+
+            var q ='select codigo, nome, statuslocal  from tb_local order by codigo asc;';            
+    
+            client.query(q,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log('retornou 400 no listlocais');
+                    console.log(err);
+                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+
+                    //console.log('retornou 201 no /listendereco');
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
+    });
+});
+
 sw.listen(4000, function () {
     console.log('Server is running.. on Port 4000');
 });
