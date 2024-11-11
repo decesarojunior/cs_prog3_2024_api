@@ -155,14 +155,14 @@
 
                                     <div class="form-group">
                                         <label for="nameMapaDataCriacao">Data de Criação:</label>
-                                        <input type="text" v-model="form_mapa.datacadastroMapa" class="form-control" 
+                                        <input type="text" v-model="form_mapa.datacadastromapa" class="form-control" 
                                                      name="nameMapaDataCriacao" id="idMapaDataCriacao" disabled>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="nameMapaModo">Modo:</label>
                                         <select v-model="form_mapa.modo" class="form-control" id="selectMapaModo">
-                                            <option value="Selecione" selected disabled>Escolha um item</option>
+                                            <option value="Selecione">Selecione</option>
                                             <option v-for="md in modos" v-bind:value="{'codigo': md.codigo, 'nome' : md.nome}">
                                                 {{ md.nome}}
                                             </option>                            
@@ -172,7 +172,7 @@
                                     <div class="form-group">
                                         <label for="nameMapaLocais">Locais:</label>
                                         <select v-model="form_mapa.locais" class="form-control" id="selectMapaLocais" multiple size="5">                                         
-                                            <option v-for="lc in locais" v-bind:value="{codigo: lc.codigo}">
+                                            <option v-for="lc in locais" v-bind:value="{'codigo': lc.codigo}">
                                                 {{ lc.nome}}
                                             </option>                            
                                         </select>
@@ -235,8 +235,48 @@
                 methods: { 
                     addMapa: function(){
 
-                    },
+                        var mapa = jQuery.extend({}, this.form_mapa);//clona o this.form_mapa
+                        if(mapa.nome.length> 0 && mapa.modo != "Selecione"){
 
+                            if(isNaN(parseInt(mapa.indice))){
+                            
+                                //se retornar um NaN significa que o mapa.indice é nullo - incluir
+                                this.$http.post('http://localhost:4000/insertmapa', mapa)
+								.then(response => { 	
+										
+										this.mapas.push(response.data);										
+                                        alert('Inseriu o Mapa '+response.data.codigo);
+                                        this.cleanFormularioMapa();
+									})
+								.catch(error => {                                     
+									alert('Erro ao inserir o Mapa: '+error.response);
+								});
+
+                            }else{
+
+                                //se retornar um NaN significa que o mapa.indice é nullo - incluir
+                                this.$http.post('http://localhost:4000/updatemapa', mapa)
+								.then(response => { 	
+                                    	
+										Vue.set(this.mapas, mapa.indice, response.data);
+
+                                        alert('Alterou o Mapa '+response.data.codigo);
+                                        
+                                        this.cleanFormularioMapa();
+									})
+								.catch(error => {                                     
+									alert('Erro ao alterar o Mapa: '+error.response.data);
+								});
+
+
+                            }
+
+
+                        }else{
+                            alert("Formulário incompleto para Mapa !!!");
+                        }
+
+                    },
                     addPatente: function(){
 
                         var patente = jQuery.extend({}, this.form_patente);//clona o this.form_patente
@@ -260,7 +300,9 @@
                                 this.$http.post('http://localhost:4000/updatepatente', patente)
 								.then(response => { 											
 										//altera o elemento.
-                                        Vue.set(this.patentes, patente.indice, response.data);										
+                                        Vue.set(this.patentes, patente.indice, response.data);		
+                                        
+                                        
                                         alert('Alterou a Patente '+response.data.codigo);
                                         this.cleanFormularioPatente();
 									})
@@ -275,10 +317,12 @@
                     cleanFormularioMapa: function(){
 
                         this.form_mapa.indice = '';
+                        this.form_mapa.codigo = '';
                         this.form_mapa.nome = '';
                         this.form_mapa.status = false;
                         this.form_mapa.datacadastromapa = '';
                         this.form_mapa.modo = 'Selecione';
+                        this.form_mapa.locais = [];
 
                     },
                     cleanFormularioPatente: function(){
@@ -303,9 +347,11 @@
 
                         this.form_mapa.indice = param_index;
                         this.form_mapa.codigo = this.mapas[param_index].codigo;
-                        //..
-
+                        this.form_mapa.nome = this.mapas[param_index].nome;                        
+                        this.form_mapa.status = this.mapas[param_index].status == 'A' ? true : false;
+                        this.form_mapa.datacadastromapa = this.mapas[param_index].datacadastromapa;
                         this.form_mapa.modo = this.mapas[param_index].modo;
+                        this.form_mapa.locais = this.mapas[param_index].locais;
                     },
                     remPatente: function(param_index, param_codigo){
                         var r = confirm("Deseja realmente remover a patente "+param_codigo+" ?");
@@ -323,6 +369,26 @@
                             .catch(error => {
                                     // error callback                                        
                                     alert('Erro ao remover Patente: ' + error);
+                                    console.log(error);
+                            });	
+                        }
+                    },
+                    remMapa: function(param_index, param_codigo){
+                        var r = confirm("Deseja realmente remover o mapa "+param_codigo+" ?");
+                        if(r){
+                            this.$http.get('http://localhost:4000/deletemapa/' + param_codigo)
+                            .then(response => {
+                                //documentacao sobre o splice
+                                //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                                //remove 1 elemento do índice definido pela variavel param_index
+                                this.mapas.splice(param_index, 1);
+
+                                alert('Removeu com sucesso o Mapa ' + response.data.codigo);
+
+                                })
+                            .catch(error => {
+                                    // error callback                                        
+                                    alert('Erro ao remover Mapa: ' + error);
                                     console.log(error);
                             });	
                         }
