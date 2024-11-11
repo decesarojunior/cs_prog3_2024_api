@@ -163,7 +163,7 @@
                                         <label for="nameMapaModo">Modo:</label>
                                         <select v-model="form_mapa.modo" class="form-control" id="selectMapaModo">
                                             <option value="Selecione" selected disabled>Escolha um item</option>
-                                            <option v-for="md in modos" v-bind:value="{codigo: md.codigo}">
+                                            <option v-for="md in modos" v-bind:value="{'codigo': md.codigo, 'nome' : md.nome}">
                                                 {{ md.nome}}
                                             </option>                            
                                         </select>                                        
@@ -299,6 +299,14 @@
                         this.form_patente.datacriacao = this.patentes[param_index].datacriacao;
                         this.form_patente.logotipo = this.patentes[param_index].logotipo;
                     },
+                    editMapa: function(param_index, param_codigo){
+
+                        this.form_mapa.indice = param_index;
+                        this.form_mapa.codigo = this.mapas[param_index].codigo;
+                        //..
+
+                        this.form_mapa.modo = this.mapas[param_index].modo;
+                    },
                     remPatente: function(param_index, param_codigo){
                         var r = confirm("Deseja realmente remover a patente "+param_codigo+" ?");
                         if(r){
@@ -360,7 +368,7 @@
                             //541
                             for(let p of response.data){
 
-                                this.modos.push(p);
+                                this.modos.push({"codigo" : p.codigo, "nome" : p.nome});
 
                             }
                         }).catch(response => {
