@@ -91,6 +91,34 @@ sw.get('/listpatentes', function (req, res, next) {
     });
 });
 
+sw.get('/listnicknamejogadores', function (req, res, next) {    
+    
+    postgres.connect(function(err,client,done) {
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+            var q ='select j.nickname '+
+                        'from tb_jogador j '+
+                        'order by nickname asc;';    
+            //Exercicio 1: incluir todas as colunas de tb_endereco
+            client.query(q,async function(err,result) {
+                
+                if(err){
+                    console.log('retornou 400 no listjogadores');
+                    console.log(err);                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+                   
+                    done(); // closing the connection;
+                    //console.log('retornou 201 no /listendereco');                    
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
+    });
+});
+
 sw.get('/listjogadores', function (req, res, next) {    
     postgres.connect(function(err,client,done) {
        if(err){
@@ -132,6 +160,113 @@ sw.get('/listjogadores', function (req, res, next) {
                 }           
             });
        }       
+    });
+});
+
+sw.get('/listcompras', function (req, res, next) {
+
+    postgres.connect(function(err,client,done) {
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+            var q ='select c.codigo, c.observacao, c.valortotal, c.data, c.nickname as jogador from tb_compra c order by c.codigo asc ';
+
+            //Exercicio 1: incluir todas as colunas de tb_endereco
+            client.query(q,async function(err,result) {
+                
+                if(err){
+                    console.log('retornou 400 no listcompras');
+                    console.log(err);                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    
+                    for(var i=0; i < result.rows.length; i++){                                              
+                        try { //Exercicio 2: incluir todas as colunas de tb_patente.                         
+                              pj = await client.query('select nickname from '+
+                                                      'tb_jogador '+
+                                                      'where nickname = $1', 
+                                                             [result.rows[i].jogador])                                                    
+                              result.rows[i].jogador = pj.rows;
+                        } catch (err) {                                                       
+                            res.status(400).send('{'+err+'}');
+                        }                                           
+                    }
+                    
+                    done(); // closing the connection;
+                    //console.log('retornou 201 no /listendereco');                    
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
+    });
+});
+
+sw.post('/insertcompra', function(req, res, next){
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Nao conseguiu acessar o  BD "+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+
+            var q1 = {
+                text: 'insert into tb_compra (data, observacao, valortotal, nickname) '
+                       + ' values (now(), $1, $2, $3) returning codigo, data, observacao, valortotal, nickname ',
+                values : [req.body.observacao, req.body.valortotal, req.body.jogador.nickname]
+            }
+            client.query(q1, function(err,result1) {
+                if(err){
+                    console.log('retornou 400 no insert q1');
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    
+                    console.log('retornou 201 no insertcompra');
+
+                    res.status(201).send({"codigo": result1.rows[0].codigo,
+                                          "data"  : result1.rows[0].data,
+                                          "observacao" : result1.rows[0].observacao,
+                                          "valortotal" : result1.rows[0].valortotal,
+                                          "jogador" : {"nickname": result1.rows[0].nickname}
+                    });
+                }
+            });
+
+        }
+    });
+});
+
+sw.post('/updatecompra', function(req, res, next){
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Nao conseguiu acessar o  BD "+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+
+            var q1 = {
+                text: 'update tb_compra set observacao = $1, valortotal = $2, nickname = $3 where '
+                       + ' codigo = $4 returning codigo, data, observacao, valortotal, nickname ',
+                values : [req.body.observacao, req.body.valortotal, req.body.jogador.nickname, req.body.codigo]
+            }
+            client.query(q1, function(err,result1) {
+                if(err){
+                    console.log('retornou 400 no insert q1');
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    
+                    console.log('retornou 201 no update');
+
+                    res.status(201).send({"codigo": result1.rows[0].codigo,
+                                          "data"  : result1.rows[0].data,
+                                          "observacao" : result1.rows[0].observacao,
+                                          "valortotal" : result1.rows[0].valortotal,
+                                          "jogador" : {"nickname": result1.rows[0].nickname}
+                    });
+                }
+            });
+
+        }
     });
 });
 
@@ -552,7 +687,6 @@ sw.get('/listlocais', function (req, res, next) {
     });
 });
 
-
 sw.get('/listtimedisputa', function (req, res, next) {
     
     postgres.connect(function(err,client,done) {
@@ -578,7 +712,7 @@ sw.get('/listtimedisputa', function (req, res, next) {
                         try { //Exercicio 2: incluir todas as colunas de tb_patente.                         
                               jd = await client.query('select nickname from tb_jogador where nickname = $1;', 
                                                              [result.rows[i].jogador])                                                    
-                              result.rows[0].jogador = {"nickname" : jd.rows[0].nickname}       
+                              result.rows[i].jogador = {"nickname" : jd.rows[0].nickname}       
 
                         } catch (err) {                                                       
                             res.status(400).send('{'+err+'}');
