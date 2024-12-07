@@ -170,7 +170,7 @@ sw.get('/listcompras', function (req, res, next) {
            console.log("Nao conseguiu acessar o  BD "+ err);
            res.status(400).send('{'+err+'}');
        }else{            
-            var q ='select c.codigo, c.observacao, c.valortotal, c.data, c.nickname as jogador from tb_compra c order by c.codigo asc ';
+            var q ='select c.codigo, c.observacao, c.valortotal, to_char(c.data, \'yyyy-mm-dd\') as data, c.nickname as jogador from tb_compra c order by c.codigo asc ';
 
             //Exercicio 1: incluir todas as colunas de tb_endereco
             client.query(q,async function(err,result) {
@@ -187,7 +187,7 @@ sw.get('/listcompras', function (req, res, next) {
                                                       'tb_jogador '+
                                                       'where nickname = $1', 
                                                              [result.rows[i].jogador])                                                    
-                              result.rows[i].jogador = pj.rows;
+                              result.rows[i].jogador = pj.rows[0];
                         } catch (err) {                                                       
                             res.status(400).send('{'+err+'}');
                         }                                           
@@ -212,12 +212,12 @@ sw.post('/insertcompra', function(req, res, next){
 
             var q1 = {
                 text: 'insert into tb_compra (data, observacao, valortotal, nickname) '
-                       + ' values (now(), $1, $2, $3) returning codigo, data, observacao, valortotal, nickname ',
-                values : [req.body.observacao, req.body.valortotal, req.body.jogador.nickname]
+                       + ' values ($1, $2, $3, $4) returning codigo, to_char(data, \'yyyy-mm-dd\') as data, observacao, valortotal, nickname ',
+                values : [req.body.data, req.body.observacao, req.body.valortotal, req.body.jogador.nickname]
             }
             client.query(q1, function(err,result1) {
                 if(err){
-                    console.log('retornou 400 no insert q1');
+                    console.log('retornou 400 no insert q1 insertcompra');
                     res.status(400).send('{'+err+'}');
                 }else{
                     
@@ -245,14 +245,14 @@ sw.post('/updatecompra', function(req, res, next){
         }else{
 
             var q1 = {
-                text: 'update tb_compra set observacao = $1, valortotal = $2, nickname = $3 where '
-                       + ' codigo = $4 returning codigo, data, observacao, valortotal, nickname ',
-                values : [req.body.observacao, req.body.valortotal, req.body.jogador.nickname, req.body.codigo]
+                text: 'update tb_compra set observacao = $1, valortotal = $2, nickname = $3, data = $4 where '
+                       + ' codigo = $5 returning codigo, to_char(data, \'yyyy-mm-dd\') as data, observacao, valortotal, nickname ',
+                values : [req.body.observacao, req.body.valortotal, req.body.jogador.nickname, req.body.data, req.body.codigo]
             }
             client.query(q1, function(err,result1) {
                 if(err){
-                    console.log('retornou 400 no insert q1');
-                    res.status(400).send('{'+err+'}');
+                    console.log('retornou 400 no insert q1 do updatecompra '+ err.data);
+                    res.status(400).send('{'+err.data+'}');
                 }else{
                     
                     console.log('retornou 201 no update');
@@ -267,6 +267,34 @@ sw.post('/updatecompra', function(req, res, next){
             });
 
         }
+    });
+});
+
+sw.get('/deletecompra/:codigo', function (req, res) {
+
+    //estabelece uma conexao com o bd.
+    postgres.connect(function(err,client,done) {
+       if(err){
+           console.log("Não conseguiu acessar o BD :"+ err);
+           res.status(400).send('{'+err+'}');
+       }else{
+
+        var q1 = {text: 'delete from tb_compra where codigo = $1 returning codigo',
+                  values: [req.params.codigo]
+                }
+
+        client.query(q1,function(err,result) {
+                done(); // closing the connection;
+                if(err){
+                    console.log("erro ao executar o deletecompra");
+                    console.log(err);
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    res.status(200).send(result.rows[0]);
+                }
+                
+            });
+       } 
     });
 });
 
@@ -599,7 +627,7 @@ sw.get('/listmapas', function (req, res, next) {
             client.query(q,async function(err,result) {
                 
                 if(err){
-                    console.log('retornou 400 no listjogadores');
+                    console.log('retornou 400 no listmapas');
                     console.log(err);                    
                     res.status(400).send('{'+err+'}');
                 }else{

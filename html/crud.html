@@ -20,6 +20,7 @@
                  <li><a data-toggle="pill" href="#menu1">Patentes</a></li>
                  <li><a data-toggle="pill" href="#menu3">Locais</a></li>
                  <li><a data-toggle="pill" href="#menu4">Mapas</a></li>
+                 <li><a data-toggle="pill" href="#menu5">Compras</a></li>
                  <li><a data-toggle="pill" href="#menu2">Sair</a></li>
                </ul>
              </div>
@@ -175,18 +176,77 @@
                                             <option v-for="lc in locais" v-bind:value="{'codigo': lc.codigo}">
                                                 {{ lc.nome}}
                                             </option>                            
-                                        </select>
-                                        
+                                        </select>                                        
                                     </div>
 
                                     <button @click="addMapa" class="btn btn-primary" type="button">Salvar</button>
                                     <button @click="cleanFormularioMapa" class="btn btn-primary" type="button">Limpar</button>
                             </div>
-
-
-
-
                         </div>
+                        <div id="menu5" class="tab-pane">
+                            <h3>Compras</h3>
+                            
+                            <table class="table table-striped" >
+                                <tr>
+                                    <th scope="col">Código</th>
+                                    <th scope="col">Data</th>
+                                    <th scope="col">Jogador</th>
+                                    <th scope="col">Valor total</th>
+                                    <th scope="col">Observações</th>                                   
+                                    <th scope="col">Alterar</th>
+                                    <th scope="col">Remover</th>
+                                </tr>
+                                <tbody>
+                                    <tr v-for="(c, indice) in compras">                                                
+                                            <td>{{c.codigo}}</td>
+                                            <td>{{c.data | formataData}}</td>
+                                            <td>{{c.jogador.nickname}}</td>
+                                            <td>{{c.valortotal}}</td>
+                                            <td>{{c.observacao}}</td>
+                                            <td><button v-on:click="editCompra(indice, c.codigo)" class="btn" type="button">Alterar</button></td>
+                                            <td><button v-on:click="remCompra(indice, c.codigo)" class="btn" type="button">Remover</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div id="formulario">                        
+                                <h3>Formulário para cadastrar e alterar Compras</h3>
+                                    <div class="form-group">
+                                        <label for="nameCompraCodigo">Codigo:</label>
+                                        <input type="number" v-model="form_compra.codigo" class="form-control" 
+                                                    name="nameCompraCodigo" id="idMapaCodigo" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                      <label for="nameCompraData">Data:</label>
+                                      <input type="date" v-model="form_compra.data" class="form-control" 
+                                                   name="nameCompraData" id="idCompraData">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nameCompraObservacao">Observações:</label>
+                                        <input type="text" v-model="form_compra.observacao" class="form-control" 
+                                                     name="nameCompraObservacao" id="idCompraObservacao">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="nameCompraValortotal">Valor total:</label>
+                                        <input type="number" v-model="form_compra.valortotal" class="form-control" 
+                                                     name="nameCompraValortotal" id="idCompraValortotal">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="selectCompraJogador">Jogador:</label>
+                                        <select v-model="form_compra.jogador" class="form-control" id="selectCompraJogador">
+                                            <option value="Selecione">Selecione</option>
+                                            <option v-for="j in jogadores" v-bind:value="{'nickname': j.nickname}">
+                                                {{ j.nickname}}
+                                            </option>                            
+                                        </select>                                        
+                                    </div>
+                                  
+                                    <button @click="addCompra" class="btn btn-primary" type="button">Salvar</button>
+                                    <button @click="cleanFormularioCompra" class="btn btn-primary" type="button">Limpar</button>
+                            </div>
+                        </div>                        
                 </div>
              </div>
         </div>           
@@ -202,6 +262,10 @@
             var modos = [];
 
             var locais = [];
+
+            var compras = [];
+
+            var jogadores = [];
 
             var dados = {"locais": locais,
                          "modos" : modos,
@@ -224,8 +288,28 @@
                                         datacadastromapa: '',
                                         status: '',
                                         locais: []
-                                    }
+                                    },
+                        "form_compra" : {
+                                        indice: '',
+                                        codigo: '',
+                                        observacao: '',
+                                        jogador: {},
+                                        data: '',
+                                        valortotal: ''                                        
+                                        },
+                        "compras" : compras,
+                        "jogadores" : jogadores
              }
+
+            Vue.filter('formataData', function (value) {                
+                //yyyy-mm-dd
+                var data = new Date(value);                
+                dia  = (data.getUTCDate()).toString().padStart(2, '0'),
+                mes  = (data.getUTCMonth()+1).toString().padStart(2, '0'), //+1 pois no getMonth Janeiro começa com zero.                
+                ano  = data.getFullYear();                
+
+                return dia+"/"+mes+"/"+ano;                
+            }) 
 
             Vue.prototype.$http = axios;
 
@@ -233,6 +317,47 @@
                 el: '#app', 
                 data: dados,
                 methods: { 
+                    addCompra: function(){
+
+                        var compra = jQuery.extend({}, this.form_compra);//clona o this.form_compra
+                        if(compra.data.length == 10 && compra.observacao.length > 0 && compra.valortotal > 0 && compra.jogador != "Selecione"){
+
+                            if(isNaN(parseInt(compra.indice))){
+                                
+                                //se retornar um NaN significa que o mapa.indice é nullo - incluir
+                                this.$http.post('http://localhost:4000/insertcompra', compra)
+                                .then(response => { 	
+                                        
+                                        this.compras.push(response.data);										
+                                        alert('Inseriu a Compra '+response.data.codigo);
+                                        this.cleanFormularioCompra();
+                                    })
+                                .catch(error => {                                     
+                                    alert('Erro ao inserir a Compra: '+error.response);
+                                });
+
+                            }else{
+
+                                //se retornar um NaN significa que o mapa.indice é nullo - incluir
+                                this.$http.post('http://localhost:4000/updatecompra', compra)
+                                .then(response => { 	
+                                        
+                                        Vue.set(this.compras, compra.indice, response.data);
+
+                                        alert('Alterou a Compra '+response.data.codigo);
+                                        
+                                        this.cleanFormularioCompra();
+                                    })
+                                .catch(error => {                                     
+                                    alert('Erro ao alterar a Compra: '+error.response.data);
+                                });
+                            }
+
+                        }else{
+                            alert("Formulário incompleto !!");
+                        }
+
+                    },
                     addMapa: function(){
 
                         var mapa = jQuery.extend({}, this.form_mapa);//clona o this.form_mapa
@@ -267,8 +392,6 @@
 								.catch(error => {                                     
 									alert('Erro ao alterar o Mapa: '+error.response.data);
 								});
-
-
                             }
 
 
@@ -314,6 +437,16 @@
                             alert("Formulário de Patente incompleto !!");
                         }
                     },
+                    cleanFormularioCompra: function(){
+
+                        this.form_compra.indice = '';
+                        this.form_compra.codigo = '';
+                        this.form_compra.data = '';
+                        this.form_compra.observacao = '';
+                        this.form_compra.valortotal = '';
+                        this.form_compra.jogador = 'Selecione';                        
+
+                    },
                     cleanFormularioMapa: function(){
 
                         this.form_mapa.indice = '';
@@ -334,6 +467,16 @@
                         this.form_patente.datacriacao = '';
                         this.form_patente.logotipo = '';
                     },
+                    editCompra: function(param_index, param_codigo){
+
+                        this.form_compra.indice = param_index;
+                        this.form_compra.codigo = this.compras[param_index].codigo;
+                        this.form_compra.observacao = this.compras[param_index].observacao; 
+                        this.form_compra.valortotal = this.compras[param_index].valortotal;
+                        this.form_compra.data = this.compras[param_index].data;
+                        this.form_compra.jogador = this.compras[param_index].jogador;                        
+                    
+                    },
                     editPatente: function(param_index, param_codigo){
                         this.form_patente.indice = param_index;
                         this.form_patente.codigo = this.patentes[param_index].codigo;
@@ -352,6 +495,26 @@
                         this.form_mapa.datacadastromapa = this.mapas[param_index].datacadastromapa;
                         this.form_mapa.modo = this.mapas[param_index].modo;
                         this.form_mapa.locais = this.mapas[param_index].locais;
+                    },
+                    remCompra: function(param_index, param_codigo){
+                        var r = confirm("Deseja realmente remover a compra "+param_codigo+" ?");
+                        if(r){
+                            this.$http.get('http://localhost:4000/deletecompra/' + param_codigo)
+                            .then(response => {
+                                //documentacao sobre o splice
+                                //https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+                                //remove 1 elemento do índice definido pela variavel param_index
+                                this.compras.splice(param_index, 1);
+
+                                alert('Removeu com sucesso a Compra ' + response.data.codigo);
+
+                                })
+                            .catch(error => {
+                                    // error callback                                        
+                                    alert('Erro ao remover Compra: ' + error);
+                                    console.log(error);
+                            });	
+                        }
                     },
                     remPatente: function(param_index, param_codigo){
                         var r = confirm("Deseja realmente remover a patente "+param_codigo+" ?");
@@ -454,6 +617,36 @@
                         }).catch(response => {
                             // error callback
                             alert('Não conectou no serviço: listlocais :' + response);
+                            console.log(response);
+                        });
+
+                        this.$http.get('http://localhost:4000/listcompras')                                        
+                        .then(response => {
+                            //541
+                            for(let c of response.data){
+
+                                this.compras.push(c);
+
+                            }
+                        }).catch(response => {
+                            // error callback
+                            alert('Não conectou no serviço: listcompras :' + response);
+                            console.log(response);
+                        });
+
+                        this.cleanFormularioCompra();
+
+                        this.$http.get('http://localhost:4000/listjogadores')                                        
+                        .then(response => {
+                            //541
+                            for(let j of response.data){
+
+                                this.jogadores.push(j);
+
+                            }
+                        }).catch(response => {
+                            // error callback
+                            alert('Não conectou no serviço: listjogadores :' + response);
                             console.log(response);
                         });
                 
