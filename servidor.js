@@ -163,6 +163,89 @@ sw.get('/listjogadores', function (req, res, next) {
     });
 });
 
+sw.get('/listpartidas', function (req, res, next) {
+
+    postgres.connect(function(err,client,done) {
+       if(err){
+           console.log("Nao conseguiu acessar o  BD "+ err);
+           res.status(400).send('{'+err+'}');
+       }else{            
+            var q ='select p.codigo, to_char(p.datainicio, \'yyyy-mm-dd\') as datainicio, to_char(p.datafim, \'yyyy-mm-dd\') as datafim, p.resultado, p.codtimedisputa as timedisputa, p.codmapa as mapa from tb_partida p order by p.codigo asc ';
+
+            //Exercicio 1: incluir todas as colunas de tb_endereco
+            client.query(q,async function(err,result) {
+                
+                if(err){
+                    console.log('retornou 400 no listpartidas');
+                    console.log(err);                    
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    
+                    for(var i=0; i < result.rows.length; i++){                                              
+                        try { //Exercicio 2: incluir todas as colunas de tb_patente.                         
+                              td = await client.query('select codigo, nometime from '+
+                                                      'tb_timedisputa '+
+                                                      'where codigo = $1', 
+                                                             [result.rows[i].timedisputa])                                                    
+                              result.rows[i].timedisputa = td.rows[0];
+
+                              mp = await client.query('select codigo, nome from '+
+                                'tb_mapa '+
+                                'where codigo = $1', 
+                                       [result.rows[i].mapa])                                                    
+                               result.rows[i].mapa = mp.rows[0];
+
+
+                        } catch (err) {                                                       
+                            res.status(400).send('{'+err+'}');
+                        }                                           
+                    }
+                    
+                    done(); // closing the connection;
+                    //console.log('retornou 201 no /listendereco');                    
+                    res.status(201).send(result.rows);
+                }           
+            });
+       }       
+    });
+});
+
+sw.post('/insertpartida', function(req, res, next){
+
+    postgres.connect(function(err,client,done) {
+        if(err){
+            console.log("Nao conseguiu acessar o  BD "+ err);
+            res.status(400).send('{'+err+'}');
+        }else{
+
+            var q1 = {
+                text: 'insert into tb_partida (codmapa, codtimedisputa, datainicio, datafim, resultado) '
+                       + ' values ($1, $2, $3, $4, $5) returning codigo, to_char(datainicio, \'yyyy-mm-dd\') as datainicio, to_char(datafim, \'yyyy-mm-dd\') as datafim, codmapa, (select m.nome from tb_mapa m where codigo = codmapa) as nomemapa,  (select td.nometime from tb_timedisputa td where codigo = codtimedisputa) as nometimedisputa, codtimedisputa, resultado ',
+                values : [req.body.mapa.codigo, req.body.timedisputa.codigo, req.body.datainicio, req.body.datafim, req.body.resultado]
+            }
+            client.query(q1, function(err,result1) {
+                if(err){
+                    console.log('retornou 400 no insert q1 insertpartida');
+                    res.status(400).send('{'+err+'}');
+                }else{
+                    
+                    console.log('retornou 201 no insertpartida');
+
+                    res.status(201).send({"codigo": result1.rows[0].codigo,
+                                          "datainicio"  : result1.rows[0].dataincio,
+                                          "datafim"  : result1.rows[0].datafim,
+                                          "resultado" : result1.rows[0].resultado,
+                                          "mapa" : {"codigo": result1.rows[0].codmapa, "nome" : result1.rows[0].nomemapa},
+                                          "timedisputa" : {"codigo": result1.rows[0].codtimedisputa, "nome" : result1.rows[0].nometimedisputa}
+                    });
+                }
+            });
+
+        }
+    });
+});
+
+
 sw.get('/listcompras', function (req, res, next) {
 
     postgres.connect(function(err,client,done) {
