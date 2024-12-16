@@ -245,7 +245,6 @@ sw.post('/insertpartida', function(req, res, next){
     });
 });
 
-
 sw.get('/listcompras', function (req, res, next) {
 
     postgres.connect(function(err,client,done) {
